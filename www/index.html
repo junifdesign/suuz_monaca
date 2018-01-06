@@ -1,0 +1,213 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta http-equiv="Content-Security-Policy" content="default-src * data: gap: https://ssl.gstatic.com; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'">
+  <script src="components/loader.js"></script>
+  <script src="lib/onsenui/js/onsenui.min.js"></script>
+  <script src='js/tesseract/tesseract.js'></script>
+  
+  <link rel="stylesheet" href="components/loader.css">
+  <link rel="stylesheet" href="lib/onsenui/css/onsenui.css">
+  <link rel="stylesheet" href="lib/onsenui/css/onsen-css-components.css">
+  <link rel="stylesheet" href="css/style.css">
+  
+  <!-- 追加 -->
+  <link rel="stylesheet" href="css/page1.css">
+  <script src="lib/onsenui/js/main.js"></script>
+    
+<script>
+ons.ready(function() {
+    console.log("Onsen UI is ready!");
+    
+    //入力
+    function keyIn(num){
+		for(var i = 1; i <= 3; i ++){
+			var target = '[name="code'+ i + '"]';
+			if($(target).val().length < 3){
+				$(target).val($(target).val() + num ); 
+				return;
+			}
+		}
+	}
+	
+	function keyBS(){
+		for(var i = 3; i >= 1; i --){
+			var target = '[name="code'+ i + '"]';
+			var text = $(target).val();
+			if(text.length > 0){
+				text = text.substr( 0, text.length-1 );
+				$(target).val(text ); 
+				return;
+			}
+		}
+	}
+    
+    //キーボードボタン
+    $(".keypad").on('click', function(){
+    	keyIn($(this).val());
+        console.log($(this).val());
+	});
+    
+    //1文字
+	$('#reset_single').on("click",function(){
+		keyBS();
+        console.log("reset_single");
+		return false;
+	});
+    
+	//入力枠
+	$('#reset_section').on("click",function(){
+        console.log("reset_section");
+		if($('[name="code3"]').val().length > 0){
+			$('[name="code3"]').val("");
+		}else if($('[name="code2"]').val().length > 0){
+			$('[name="code2"]').val("");
+		}else if($('[name="code1"]').val().length > 0){
+			$('[name="code1"]').val("");
+		}
+		return false;
+	});
+    
+	//リセット
+	$('#reset_all').on("click",function(){
+        console.log("reset_all");
+		$(".value_input_index").val("").attr("value","");
+	});
+    
+    //送信
+	$('#go_btn').on("click",function(){
+	    
+        if($('[name="code1"]').val().length == 3
+            && $('[name="code2"]').val().length == 3
+            && $('[name="code3"]').val().length == 3){
+                
+            console.log('ok');
+        } else {
+            return false;
+        }
+
+		//まず、アラートを消しておく。
+		$("#alert").css("display","none");
+		
+		//formのtarget
+		//$(this).closest("form").attr("target","");
+	
+		//整形
+		var code1 = ( '000' + $('[name="code1"]').val() ).slice( -3 );
+		var code2 = ( '000' + $('[name="code2"]').val() ).slice( -3 );
+		var code3 = ( '000' + $('[name="code3"]').val() ).slice( -3 );
+		
+		var q = code1 + "-" + code2 + "-" + code3 ;
+		$("#mainForm").find('[name="q"]').val(q);
+		
+		//javascriptでウインドウを開き、フォームはキャンセルする。
+		//window.open("?q="+ q);
+        window.open = cordova.InAppBrowser.open;
+        var ref = window.open("https://suuz.jp/system/modules/?q="+ q, "_system", 'location=yes');
+        ref.addEventListener('loadstart', function(event) { alert(event.url); });
+
+		return true;
+	});
+    
+});
+
+console.log($)
+
+//OCR関連
+
+function callCamera(){
+    navigator.camera.getPicture(onSuccessCamera, onFailCamera, { quality: 50, 
+        destinationType: Camera.DestinationType.FILE_URI }); 
+}
+function onSuccessCamera(imageURI) {
+    // var image = document.getElementById('img1');
+    // var msg = document.getElementById('msg');
+    // image.src = imageURI;
+    // msg.innerHTML = imageURI;
+    console.log(imageURI)
+    
+    Tesseract.recognize(imageURI)
+    .progress(function(p){ console.log('progress', p) })
+    .then(function(result){ console.log('result', result) })
+
+}
+
+function onFailCamera(message) {
+    alert('Failed: ' + message);
+}
+
+
+</script>
+    
+</head>
+<body>
+
+<ons-navigator id="navigator" page="page1.html">
+</ons-navigator>
+
+  <ons-template id="page1.html">
+    <ons-page id="first-page">
+      <ons-toolbar style="height: 60px;" fixed-style>
+        <div class="center"><img class="header_logo" src="./img/header_logo.png" alt="SuuZ(スージー)" /></div>
+        <div class="right"><ons-button onclick="callCamera();">カメラ</ons-button></div>
+      </ons-toolbar>
+      
+      <div class="spacer"></div>
+     
+<article>
+<div id="alert" class="alert alert-error" style="display: none;">
+    <button class="close" data-dismiss="alert">&times;</button>
+    <strong>Error!</strong> <span>番号が間違っています。</span>
+</div>
+<!--PROP PORTのformタグ-->
+<form action="" method="post" id="mainForm" target="_blank">
+    <input type="hidden" name="q">
+    <!--PROP PORTのformタグ-->
+    <div id="numerical_value_input">
+        <span>S:</span>
+        <input type="text" class="value_input_index" name="code1" id="first3" value="" maxlength="3">
+        <input type="text" class="value_input_index" name="code2" id="middle3" value="" maxlength="3">
+        <input type="text" class="value_input_index" name="code3" id="last3" value="" maxlength="3">
+    </div>
+    <div id="index_numeric_keypad">
+        <ul class="cf">
+        <li><input type="button" class="keypad" value="7"/></li>
+        <li><input type="button" class="keypad" value="8"/></li>
+        <li><input type="button" class="keypad" value="9"/></li>
+        <li><input type="button" class="keypad" value="4"/></li>
+        <li><input type="button" class="keypad" value="5"/></li>
+        <li><input type="button" class="keypad" value="6"/></li>
+        <li><input type="button" class="keypad" value="1"/></li>
+        <li><input type="button" class="keypad" value="2"/></li>
+        <li><input type="button" class="keypad" value="3"/></li>
+        <li><input type="button" class="keypad" value="0"/></li>
+        <li><input type="submit" id="go_btn" value="GO" /></li>
+        <li><input type="button" id="reset_single" value="１文字クリア" /></li>
+        <li><input type="button" id="reset_section" value="入力中枠クリア" /></li>
+        <li><input type="button" id="reset_all" value="全クリア" /></li>
+       </ul>
+    </div>
+    </form>
+</article>
+
+
+    </ons-page>
+  </ons-template>
+
+  <ons-template id="page2.html">
+    <ons-page id="second-page">
+      <ons-toolbar>
+        <div class="left"><ons-back-button>Page 1</ons-back-button></div>
+        <div class="center">Page 2</div>
+      </ons-toolbar>
+
+      <div class="content" style="text-align: center">
+        <p>This is the second page.</p>
+        <ons-button id="pop-button">Pop page</ons-button>
+      </div>
+    </ons-page>
+  </ons-template>
+</body>
+</html>
